@@ -1,2 +1,45 @@
-# KeepersLantern
-Lighting overhaul for Graveyard Keeper
+# Keeper's Lantern
+
+A lightweight lighting overhaul for **Graveyard Keeper 1.407** built around darker nights, darker procedural dungeons, and a visible belt lantern that reuses the game's native lighting systems.
+
+**Current stable version: 1.0.9**
+
+## What it changes
+
+- Outdoor nights use a darker, slightly cooler ambient profile while preserving local world lights.
+- Procedural dungeons use a dedicated darker ambient profile and slightly larger stationary practical-light radii.
+- The Keeper gets an enhanced native Point/Ground light outdoors at night and in procedural dungeons.
+- A small physical lantern sprite is mounted on the Keeper's rear belt and follows the character animation rather than running on a free timer.
+- Dynamic shadows continue to use Graveyard Keeper's live `DynamicLights.shadows` registry.
+- Normal interiors keep vanilla world lighting and hard-disable the enhanced Keeper light.
+- The mortuary remains a vanilla-lighting passthrough.
+
+## Stable 1.0.9 defaults
+
+- Outdoor night brightness: `0.70`
+- Outdoor night cool tint: `0.16`
+- Dungeon brightness: `0.60`
+- Dungeon cool tint: `0.07`
+- Dungeon stationary practical-light radius: `x1.25`
+- Keeper Point light target: range `120`, intensity `1.50`, native coefficient `1.25`, offset `X 0 / Y -0.40`
+- Keeper Ground light target: range `455`, intensity `1.65`, native coefficient `0.75`
+
+The 1.0.9 release also fixes the remaining native-light calibration bug: the stored Keeper baseline is normalized against `TimeOfDay.light_intensity_k`, so starting during daytime and later reaching night no longer produces an abnormally bright lantern.
+
+## Installation
+
+1. Install BepInEx 5 for Graveyard Keeper.
+2. Copy `KeepersLantern.dll` into `BepInEx/plugins`.
+3. Start the game.
+
+Configuration Manager is optional. When installed, F1 exposes the player-facing outdoor-night, dungeon, lantern, and advanced belt-position/diagnostic controls.
+
+## Compatibility
+
+`Darker Nights` is not required and is not the intended visual combination. If it is detected, Keeper's Lantern suppresses its own outdoor ambient-darkening pass to avoid double-darkening.
+
+## Development
+
+The public repository contains only redistributable production source and build metadata. Reverse-engineering notes, runtime research, decompilation evidence, and other private research material are kept outside this repository.
+
+See `docs/BASELINE_1.0.9.md`, `docs/TEST_BUILD_LOG.md`, and `docs/MIGRATION_PROVENANCE.md` for the accepted runtime contract and provenance.

@@ -1,0 +1,61 @@
+name: Build Keeper's Lantern
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'KeepersLantern.csproj'
+      - 'nuget.config'
+      - '.github/workflows/build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keeperslantern-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore KeepersLantern.csproj --configfile nuget.config
+
+      - name: Build Release DLL
+        run: dotnet build KeepersLantern.csproj -c Release --no-restore
+
+      - name: Read version and stage artifact
+        id: version
+        shell: pwsh
+        run: |
+          $source = Get-Content 'src/UnifiedLightingV021.cs' -Raw
+          if ($source -notmatch 'PluginVersion\s*=\s*"([^"]+)"') {
+            throw 'Could not read PluginVersion from src/UnifiedLightingV021.cs'
+          }
+          $version = $Matches[1]
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item 'bin/Release/KeepersLantern.dll' "dist/KeepersLantern-$version.dll"
+          $hash = (Get-FileHash "dist/KeepersLantern-$version.dll" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+          Write-Host "KeepersLantern $version SHA-256: $hash"
+
+      - name: Upload versioned DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeepersLantern-${{ steps.version.outputs.version }}
+          path: dist/KeepersLantern-${{ steps.version.outputs.version }}.dll
+          if-no-files-found: error
+          retention-days: 7
