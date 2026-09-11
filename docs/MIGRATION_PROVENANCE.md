@@ -21,6 +21,21 @@ This public repository intentionally starts with a **new clean Git history**. Hi
 - Artifact archive digest: `sha256:130c07842482ca3903b8d83bedaa231c04947acef131e94817f53e7952efabc4`
 - Tested raw `KeepersLantern.dll` SHA-256: `2c3a2ea5da5204153c00eaa0ba77c36f96a0977535837a450d2cbe22e4cef09a`
 
+## Public accepted source
+
+- Public bootstrap / accepted source commit: `45a1bc175a456224a91acbf34be820e3271a449e`
+- Frozen public ref: `baseline/1.0.9-accepted`
+- Public Actions reproducibility run: `34636548022`
+- Public job: `103385720318`
+- Result: success, `0` warnings / `0` errors
+- Public artifact ID: `10278816930`
+- Public artifact digest: `sha256:13ef63d3a0a6fb0d0b134c1fc7481dcdee4d5f475b26a700d28e7c964b518950`
+- Public CI DLL SHA-256: `11972437727ffd3fadc01007cf49b791b3c62dfe637a26741c671f1a69f3c1ba`
+
+The four production source blobs, `KeepersLantern.csproj`, and `nuget.config` in the public bootstrap are byte-for-byte identical to the frozen legacy 1.0.9 source.
+
+The public rebuild is intentionally recorded separately from the tested binary identity. The .NET SDK embeds the checked-out Git revision in assembly informational/build metadata, so rebuilding the same source under the new public commit produces a different raw DLL hash. Direct binary comparison found the differences confined to PE/build identity metadata (timestamp, MVID, and embedded source-revision strings). No runtime source changed. The tester-accepted binary remains identified by SHA-256 `2c3a2ea5da5204153c00eaa0ba77c36f96a0977535837a450d2cbe22e4cef09a`.
+
 ## What was imported
 
 The public bootstrap deliberately imports only the current production baseline and maintainable public metadata:
@@ -32,8 +47,6 @@ The public bootstrap deliberately imports only the current production baseline a
 - accepted baseline and build/provenance documentation;
 - economical public CI;
 - `.gitignore`.
-
-The imported production source blobs are byte-for-byte identical to the frozen legacy 1.0.9 source.
 
 ## What was intentionally excluded
 
