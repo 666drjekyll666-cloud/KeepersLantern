@@ -38,8 +38,3 @@ Configuration Manager is optional. When installed, F1 exposes the player-facing 
 
 `Darker Nights` is not required and is not the intended visual combination. If it is detected, Keeper's Lantern suppresses its own outdoor ambient-darkening pass to avoid double-darkening.
 
-## Development
-
-The public repository contains only redistributable production source and build metadata. Reverse-engineering notes, runtime research, decompilation evidence, and other private research material are kept outside this repository.
-
-See `docs/BASELINE_1.0.9.md`, `docs/TEST_BUILD_LOG.md`, and `docs/MIGRATION_PROVENANCE.md` for the accepted runtime contract and provenance.
