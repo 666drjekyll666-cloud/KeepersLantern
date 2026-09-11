@@ -31,7 +31,7 @@ jobs:
       - name: Reproduce accepted binary identity
         shell: pwsh
         run: |
-          dotnet build KeepersLantern.csproj -c Release --no-restore -p:SourceRevisionId=1ed29f48c33768d11e7dcf75cf5ea01a234c9369
+          dotnet build KeepersLantern.csproj -c Release --no-restore -p:SourceRevisionId=9a0e5e76ff0b646ffd08b104b4ada1e83f8ea635
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item 'bin/Release/KeepersLantern.dll' 'dist/KeepersLantern-1.0.9.dll'
           $hash = (Get-FileHash 'dist/KeepersLantern-1.0.9.dll' -Algorithm SHA256).Hash.ToLowerInvariant()
