@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'release/accepted.json'
-      - '.github/workflows/publish-accepted-release.yml'
   workflow_dispatch:
 
 permissions:
@@ -40,7 +39,22 @@ jobs:
             echo "$key=$value" >> "$GITHUB_OUTPUT"
           done
 
+      - name: Check whether release already exists
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release $RELEASE_TAG already exists; no publication work required."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Download exact accepted artifact
+        if: steps.existing.outputs.exists != 'true'
         uses: actions/download-artifact@v4
         with:
           name: ${{ steps.release.outputs.artifact_name }}
@@ -50,6 +64,7 @@ jobs:
           run-id: ${{ steps.release.outputs.run_id }}
 
       - name: Verify accepted binary
+        if: steps.existing.outputs.exists != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -63,6 +78,7 @@ jobs:
           fi
 
       - name: Publish GitHub Release
+        if: steps.existing.outputs.exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
@@ -75,11 +91,6 @@ jobs:
         run: |
           set -euo pipefail
           asset="release-asset/$RELEASE_ASSET_NAME"
-
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release $RELEASE_TAG already exists; leaving it unchanged."
-            exit 0
-          fi
 
           cat > release-notes.md <<EOF
           $RELEASE_NOTES
