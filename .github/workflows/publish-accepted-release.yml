@@ -1,0 +1,88 @@
+name: Publish Accepted Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'release/accepted.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-accepted-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read accepted release manifest
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest='release/accepted.json'
+          for key in version tag title source_sha run_id artifact_name asset_name sha256 notes; do
+            value="$(jq -r --arg key "$key" '.[$key]' "$manifest")"
+            if [ -z "$value" ] || [ "$value" = "null" ]; then
+              echo "Missing release manifest field: $key" >&2
+              exit 1
+            fi
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Download exact accepted artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.release.outputs.artifact_name }}
+          path: release-asset
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.release.outputs.run_id }}
+
+      - name: Verify accepted binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset="release-asset/${{ steps.release.outputs.asset_name }}"
+          test -f "$asset"
+          actual="$(sha256sum "$asset" | awk '{print $1}')"
+          expected='${{ steps.release.outputs.sha256 }}'
+          if [ "$actual" != "$expected" ]; then
+            echo "SHA-256 mismatch: expected $expected, got $actual" >&2
+            exit 1
+          fi
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag='${{ steps.release.outputs.tag }}'
+          asset="release-asset/${{ steps.release.outputs.asset_name }}"
+
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists; leaving it unchanged."
+            exit 0
+          fi
+
+          cat > release-notes.md <<EOF
+          ${{ steps.release.outputs.notes }}
+
+          SHA-256: ${{ steps.release.outputs.sha256 }}
+          EOF
+
+          gh release create "$tag" "$asset" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target '${{ steps.release.outputs.source_sha }}' \
+            --title '${{ steps.release.outputs.title }}' \
+            --notes-file release-notes.md
