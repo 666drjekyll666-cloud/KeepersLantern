@@ -4,6 +4,10 @@ A lightweight lighting overhaul for **Graveyard Keeper 1.407** built around dark
 
 **Current stable version: 1.0.9**
 
+## Download
+
+Stable builds are available from [GitHub Releases](https://github.com/666drjekyll666-cloud/KeepersLantern/releases).
+
 ## What it changes
 
 - Outdoor nights use a darker, slightly cooler ambient profile while preserving local world lights.
@@ -37,4 +41,3 @@ Configuration Manager is optional. When installed, F1 exposes the player-facing 
 ## Compatibility
 
 `Darker Nights` is not required and is not the intended visual combination. If it is detected, Keeper's Lantern suppresses its own outdoor ambient-darkening pass to avoid double-darkening.
-
