@@ -146,7 +146,7 @@ The hypothesis "reapply the current preset after the early 0.50 s Player(Clone) 
 - **Result:** success, `0` warnings / `0` errors
 - **Artifact:** `KeepersLantern-1.0.10`
 - **Artifact ID:** `10296070959`
-- **Artifact digest:** `sha256:26261a0fb592a78ff91c08b9475b3a9a401a185a2964980bcb8cc76e913d68a9a`
+- **Artifact digest:** `sha256:26261a0fb592a78ff91c08b9475b3a9a401a185a2964980bcb8cc76e913d68a9`
 - **Raw handed DLL SHA-256:** `1463362c53d8bcfca6f7bc4ab7a65f031a2282615a5723012e26a2ad31027b2b`
 
 ### Tester result — REJECTED
