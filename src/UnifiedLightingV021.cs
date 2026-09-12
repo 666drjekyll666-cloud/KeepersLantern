@@ -25,7 +25,7 @@ namespace KeepersLantern
     {
         private const string PluginGuid = "nikich.gyk.keeperslantern";
         private const string PluginName = "Keeper's Lantern";
-        private const string PluginVersion = "1.0.9";
+        private const string PluginVersion = "1.0.12";
         private const string DarkerNightsGuid = "com.thalethegreat.darkernights";
 
         private EnvironmentProbe21 _probe;
@@ -93,7 +93,7 @@ namespace KeepersLantern
             try { _darkerNightsPresent = Chainloader.PluginInfos.ContainsKey(DarkerNightsGuid); }
             catch { _darkerNightsPresent = false; }
 
-            Logger.LogInfo("Keeper's Lantern 1.0.9 loaded. Release lighting profile active; pre-game ambient mutation blocked; mortuary uses vanilla lighting passthrough.");
+            Logger.LogInfo("Keeper's Lantern 1.0.12 loaded. Release lighting profile active; pre-game ambient mutation blocked; mortuary uses vanilla lighting passthrough.");
             Logger.LogInfo("Outdoor/dungeon darkness uses one final ambientLight adjustment after vanilla TimeOfDay; normal interiors are untouched.");
             Logger.LogInfo("Keeper light uses vanilla DynamicLights cached coefficients; dungeon darkness remains immediate.");
 
@@ -800,7 +800,6 @@ namespace KeepersLantern
             }
         }
 
-
         public void ApplyAmbientLate()
         {
             Color current = RenderSettings.ambientLight;
@@ -871,7 +870,6 @@ namespace KeepersLantern
             return Color.Lerp(dim, cool, _coolTint);
         }
 
-
         private void RestoreAmbient()
         {
             if (!_haveAmbientOverride) return;
@@ -895,7 +893,6 @@ namespace KeepersLantern
         {
             RestoreAmbient();
         }
-
     }
 
     internal sealed class KeeperLight21
@@ -998,9 +995,6 @@ namespace KeepersLantern
             if (!allowBaselineCapture)
                 _baselineCaptureBlockedLastApply = true;
 
-            // Normal interiors are a real hard-off boundary, including the important
-            // first-bind-inside-house case. 0.4.18 only restored after a previously active
-            // lantern, so an initial indoor bind could leave vanilla Keeper lights visible.
             if (hardOff)
             {
                 RestorePointOffset();
@@ -1009,10 +1003,6 @@ namespace KeepersLantern
                 return;
             }
 
-            // 1.0.9: if the first bind happened while an interior preset had already
-            // attenuated Light.intensity, do not use that value as the native baseline.
-            // Release only the hard-off boolean state, give vanilla DynamicLights one full
-            // outdoor frame to restore the rig, then capture the real baseline.
             if (!_vanillaIntensityBaselineValid)
             {
                 if (!allowBaselineCapture)
@@ -1083,9 +1073,6 @@ namespace KeepersLantern
                 _ground.enabled = true;
             }
 
-            // 0.4.20: sample existing DynamicLights at the same cheap 10 Hz cadence used
-            // for Keeper coefficients. Only outdoor night uses overlap compensation;
-            // accepted dungeon lighting is intentionally untouched.
             bool nativeTick = enteringActive || Time.unscaledTime >= _nextNativeIntensityUpdate;
             if (!allowExternalCompensation)
             {
@@ -1104,18 +1091,11 @@ namespace KeepersLantern
                 Mathf.Abs(effectiveFactor - _lastEffectiveFactor) >= 0.002f ||
                 Mathf.Abs(factor - _lastFactor) >= 0.002f;
 
-            // Radius follows the raw gameplay fade, not overlap attenuation. 0.4.20 wrote
-            // range only while the fade was changing; vanilla can later restore its own
-            // range, leaving the full-night pool stuck at the small daytime radius. Keep
-            // the exact smooth curve, but verify/reassert it at the already-existing 10 Hz
-            // native-light cadence. Writes happen only when the component actually differs.
             float desiredPointRange = Mathf.Lerp(_vanillaPointRange, _targetPointRange, factor);
             float desiredGroundRange = Mathf.Lerp(_vanillaGroundRange, _targetGroundRange, factor);
             _lastDesiredPointRange = desiredPointRange;
             _lastDesiredGroundRange = desiredGroundRange;
 
-            // 0.4.15 architecture remains: vanilla DynamicLights.Update is the normal
-            // per-frame Light.intensity writer. We only alter its cached coefficients at 10 Hz.
             if (nativeTick)
             {
                 _nextNativeIntensityUpdate = Time.unscaledTime + 0.10f;
@@ -1132,7 +1112,6 @@ namespace KeepersLantern
 
                 if (!ApplyNativeIntensityCoefficients(effectiveFactor))
                 {
-                    // Compatibility fallback only. GK 1.407 should bind the native lists.
                     _point.intensity = Mathf.Lerp(_vanillaPointIntensity, _targetPointIntensity, effectiveFactor);
                     _ground.intensity = Mathf.Lerp(_vanillaGroundIntensity, _targetGroundIntensity, effectiveFactor);
                     _directIntensityFallbackWrites += 2;
@@ -1158,8 +1137,6 @@ namespace KeepersLantern
 
         public void ApplyWorkshopGroundFill(float range, float intensity)
         {
-            // Reuse the already-bound native Keeper rig. Calling the normal zero-factor
-            // path releases a prior hard-off once, but does not activate the lantern.
             Apply(0f, false, false, false);
             if (!_bound || _point == null || _ground == null) return;
 
@@ -1169,13 +1146,9 @@ namespace KeepersLantern
             _workshopGroundFillApplied = true;
             _workshopGroundFillRange = range;
             _workshopGroundFillIntensity = intensity;
-            // Workshop fill owns the ground radius while active; keep F10 desired-range
-            // telemetry aligned with that mode instead of reporting the vanilla radius.
             _lastDesiredPointRange = _vanillaPointRange;
             _lastDesiredGroundRange = range;
 
-            // Point is the accepted shadow source. Keep it physically disabled in workshop
-            // fill mode so this visual experiment cannot alter shadow-source matching.
             if (_point.enabled)
             {
                 _point.enabled = false;
@@ -1190,8 +1163,6 @@ namespace KeepersLantern
             if (entering)
                 _log.LogInfo("Keeper workshop ground-only fill active | range=" + range.ToString("0.0") + " intensity=" + intensity.ToString("0.00") + ".");
 
-            // Same cheap cadence as the native night-light bridge. The final LateUpdate
-            // point/ground enabled-state guards above are only boolean writes when needed.
             if (Time.unscaledTime < _nextWorkshopGroundFillUpdate) return;
             _nextWorkshopGroundFillUpdate = Time.unscaledTime + 0.10f;
 
@@ -1202,9 +1173,7 @@ namespace KeepersLantern
             }
 
             if (!_nativeIntensityBound || !ValidateNativeIntensityIndices())
-            {
                 TryBindNativeIntensityControl();
-            }
 
             if (_nativeIntensityBound && ValidateNativeIntensityIndices() && _nativeOriginalsCaptured)
             {
@@ -1218,15 +1187,11 @@ namespace KeepersLantern
                     _workshopGroundFillWrites++;
                 }
             }
-            else
+            else if (Mathf.Abs(_ground.intensity - intensity) > 0.001f)
             {
-                // Compatibility fallback only. Normal GK 1.407 uses the cached native K.
-                if (Mathf.Abs(_ground.intensity - intensity) > 0.001f)
-                {
-                    _ground.intensity = intensity;
-                    _directIntensityFallbackWrites++;
-                    _workshopGroundFillWrites++;
-                }
+                _ground.intensity = intensity;
+                _directIntensityFallbackWrites++;
+                _workshopGroundFillWrites++;
             }
         }
 
@@ -1256,8 +1221,6 @@ namespace KeepersLantern
                 _log.LogInfo("Keeper native lights hard-off for normal interior.");
             }
 
-            // DynamicLights may touch the components earlier in the frame. LateUpdate is
-            // the final safety gate before rendering; only write when vanilla re-enabled one.
             if (_point.enabled) { _point.enabled = false; _hardOffWrites++; }
             if (_ground.enabled) { _ground.enabled = false; _hardOffWrites++; }
         }
@@ -1312,9 +1275,6 @@ namespace KeepersLantern
             if (pointIntensity <= 0.0001f || groundIntensity <= 0.0001f)
                 return false;
 
-            // DynamicLights writes a live output that already contains TimeOfDay's global
-            // light_intensity_k. Store the equivalent full-global-K baseline so calibration
-            // is invariant to whether capture occurs during day, dusk or night.
             float globalK;
             if (!TryReadGlobalLightIntensityK(out globalK))
                 return false;
@@ -1383,9 +1343,6 @@ namespace KeepersLantern
             _vanillaGroundEnabled = ground.enabled;
             if (!_vanillaIntensityBaselineValid)
             {
-                // 1.0.9: a freshly bound Light may still expose prefab/raw intensity before
-                // DynamicLights applies the current TimeOfDay coefficient. Never calibrate
-                // during Bind; wait for at least one settled native frame instead.
                 _baselineCaptureAfterFrame = Math.Max(_baselineCaptureAfterFrame, Time.frameCount + 1);
                 if (!allowBaselineCapture)
                     _baselineCaptureBlockedLastApply = true;
@@ -1452,9 +1409,6 @@ namespace KeepersLantern
             float pointScale = _vanillaPointIntensity > 0.0001f ? _targetPointIntensity / _vanillaPointIntensity : 1f;
             float groundScale = _vanillaGroundIntensity > 0.0001f ? _targetGroundIntensity / _vanillaGroundIntensity : 1f;
 
-            // DynamicLights computes: baseIntensity * globalK * cachedK * presetAlpha.
-            // Interpolate between vanilla output and our accepted constant/base output,
-            // then solve only for cachedK. Flicker/presetAlpha remains fully vanilla.
             float desiredPointK = _nativePointOriginalK * Mathf.Lerp(1f, pointScale / globalK, factor);
             float desiredGroundK = _nativeGroundOriginalK * Mathf.Lerp(1f, groundScale / globalK, factor);
 

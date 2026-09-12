@@ -18,6 +18,7 @@
     <Compile Include="src\BeltLanternBackPocV034.cs" />
     <Compile Include="src\DungeonPracticalLightBoost.cs" />
     <Compile Include="src\LanternShadowBoostOptimized.cs" />
+    <Compile Include="src\SaveNowEnvironmentCompatibility.cs" />
   </ItemGroup>
 
   <ItemGroup>
