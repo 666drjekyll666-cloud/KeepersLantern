@@ -1,11 +1,11 @@
 {
-  "version": "1.0.9",
-  "tag": "v1.0.9",
-  "title": "Keeper's Lantern 1.0.9",
-  "source_sha": "45a1bc175a456224a91acbf34be820e3271a449e",
-  "run_id": 34645213316,
-  "artifact_name": "KeepersLantern-1.0.9-exact",
-  "asset_name": "KeepersLantern-1.0.9.dll",
-  "sha256": "2c3a2ea5da5204153c00eaa0ba77c36f96a0977535837a450d2cbe22e4cef09a",
-  "notes": "Fixed the daytime-to-night lantern overbrightness bug and updated the default outdoor night and dungeon brightness values."
+  "version": "1.0.12",
+  "tag": "v1.0.12",
+  "title": "Keeper's Lantern 1.0.12",
+  "source_sha": "c33daee1267c841dd5a5765de8b10d692d332fa9",
+  "run_id": 34689021870,
+  "artifact_name": "KeepersLantern-1.0.12",
+  "asset_name": "KeepersLantern-1.0.12.dll",
+  "sha256": "5b4fe6b302025c719827bfa2d4f863e63037c48369736470906bc9a6a1e5048a",
+  "notes": "Fixed Save Now direct-load interior lighting by refreshing the selected vanilla environment preset only after Save Now finishes restoring the saved player location. Preserves the accepted Keeper's Lantern lighting balance and native-light behavior."
 }
