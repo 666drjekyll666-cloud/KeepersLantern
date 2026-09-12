@@ -14,7 +14,7 @@ Use the standard flow: **discover -> verify -> implement narrowly -> test -> acc
 - Repository / project / assembly: `KeepersLantern`
 - Game: `Graveyard Keeper 1.407`
 - Stable primary BepInEx GUID: `nikich.gyk.keeperslantern`
-- Current accepted stable runtime baseline: **1.0.9**
+- Current accepted stable runtime baseline: **1.0.12**
 - `main` is the stable accepted public line.
 
 The production assembly currently compiles exactly:
@@ -23,12 +23,13 @@ The production assembly currently compiles exactly:
 - `src/BeltLanternBackPocV034.cs`
 - `src/DungeonPracticalLightBoost.cs`
 - `src/LanternShadowBoostOptimized.cs`
+- `src/SaveNowEnvironmentCompatibility.cs`
 
 Do not silently add old POC/runtime files to `KeepersLantern.csproj`.
 
-## Accepted 1.0.9 contract
+## Accepted 1.0.12 contract
 
-Treat `docs/BASELINE_1.0.9.md`, `docs/TEST_BUILD_LOG.md`, the production source compiled by `KeepersLantern.csproj`, and the frozen accepted baseline ref as authoritative.
+Treat `docs/BASELINE_1.0.12.md`, `docs/TEST_BUILD_LOG.md`, the production source compiled by `KeepersLantern.csproj`, and the frozen accepted baseline ref as authoritative.
 
 Accepted behavior includes:
 
@@ -39,6 +40,8 @@ Accepted behavior includes:
 - Keeper Ground target `455 / 1.65 / K0.75`;
 - normal interiors use vanilla world lighting and hard-disable the enhanced Keeper light;
 - `mortuary` uses vanilla-lighting passthrough;
+- Save Now direct-interior restores refresh the already-selected vanilla environment preset only after `SaveNow.Plugin.RestoreLocation()` has completed;
+- the Save Now compatibility path is idle when Save Now is absent, ignores outdoor/dungeon results, and fails closed if required runtime members cannot be resolved;
 - belt visual remains rear-belt mounted and animation-frame synchronized;
 - shadows use the live `DynamicLights.shadows` registry;
 - no custom GL/full-screen edge-darkening renderer;
@@ -47,7 +50,7 @@ Accepted behavior includes:
 - a valid normalized baseline survives later interior/rebind transitions;
 - Darker Nights, when detected, suppresses this mod's outdoor ambient-darkening pass to avoid stacking.
 
-Do not change accepted lighting balance, lantern timing, overlap compensation, belt behavior, dungeon practical-light strength, shadow behavior, or interior policy while implementing an unrelated fix.
+Do not change accepted lighting balance, lantern timing, overlap compensation, belt behavior, dungeon practical-light strength, shadow behavior, interior policy, or the accepted Save Now restore seam while implementing an unrelated fix.
 
 ## Public / private boundary
 
@@ -69,6 +72,7 @@ Preserve the accepted architecture:
 - do not write Keeper `Light.intensity` every frame during normal operation;
 - low-frequency maintenance is acceptable only when verified vanilla behavior can overwrite required state;
 - keep shadow work narrow and local;
+- keep Save Now compatibility event-driven rather than polling plugin/environment state in steady state;
 - restore modified Unity/native state on release, teardown, or destruction.
 
 The rejected custom GL edge-darkening path must not return without new evidence and explicit approval.
@@ -79,13 +83,16 @@ Lighting code must correctly handle:
 
 - fresh/reloaded gameplay during daytime followed by night;
 - first load inside a normal interior;
+- Save Now direct-load into a normal interior;
 - interior -> outdoors transitions, including at night;
 - outdoors <-> interior transitions;
 - dungeon entry/exit;
 - player/light-rig recreation or rebind;
 - main-menu return and subsequent reload.
 
-Never capture an interior-attenuated or raw/unsettled light value as the full Keeper baseline. The 1.0.9 normalized baseline design is a release invariant unless a separately tested architecture replaces it.
+Never capture an interior-attenuated or raw/unsettled light value as the full Keeper baseline. The accepted normalized-baseline design remains a release invariant unless a separately tested architecture replaces it.
+
+Known history: 1.0.10 and 1.0.11 attempted the Save Now interior refresh before its late location restoration and were rejected. Do not reintroduce an elapsed-time-from-player-spawn approximation in place of the accepted post-`RestoreLocation()` seam without new evidence.
 
 ## Workflow
 
@@ -114,7 +121,7 @@ Standard public CI is permitted when it proves a concrete build/release property
 ## Long-lived sources of truth
 
 - `AGENTS.md`
-- `docs/BASELINE_1.0.9.md` or a newer accepted baseline
+- `docs/BASELINE_1.0.12.md` or a newer accepted baseline
 - `docs/TEST_BUILD_LOG.md`
 - `docs/MIGRATION_PROVENANCE.md`
 - `README.md`
