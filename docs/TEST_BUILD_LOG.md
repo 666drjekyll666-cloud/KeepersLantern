@@ -2,6 +2,46 @@
 
 Durable handoff and acceptance record for numbered player builds.
 
+## 1.0.10 — REJECTED Save Now compatibility candidate
+
+- **Date:** 2026-09-12
+- **Development branch:** `dev/1.0.10`
+- **Frozen handed source:** `candidate/1.0.10`
+- **Exact handed source commit:** `ba5d1ef54354dc0b191b1b5ee93491e14d91547f`
+- **Purpose / hypothesis:** after a Save Now direct-load into an interior, reapply the already-selected current vanilla `EnvironmentEngine` preset once after the gameplay player appears and the existing 0.50 s settle window completes.
+
+### Candidate implementation
+
+- detects Save Now by GUID `p1xel8ted.gyk.savenow`;
+- arms one environment refresh per newly spawned gameplay `Player(Clone)`;
+- refresh is limited to settled normal interiors with a real current preset;
+- reuses the current vanilla preset through `EnvironmentEngine.ApplyEnvironmentPreset`;
+- does not hardcode ambient/LUT values;
+- does not call `SetEngineGlobalState` or `UpdateZone`;
+- leaves outdoor/dungeon behavior and the accepted 1.0.9 normalized Keeper-light baseline unchanged.
+
+### Tested build provenance
+
+- **PR:** `#1`
+- **Actions run:** `34686144572`
+- **Result:** success, `0` warnings / `0` errors
+- **Artifact:** `KeepersLantern-1.0.10`
+- **Artifact ID:** `10296070959`
+- **Artifact digest:** `sha256:26261a0fb592a78ff91c08b9475b3a9a401a185a2964980bcb8cc76e913d68a9`
+- **Raw handed DLL SHA-256:** `1463362c53d8bcfca6f7bc4ab7a65f031a2282615a5723012e26a2ad31027b2b`
+
+### Tester result — REJECTED
+
+Direct-load lighting remained incorrect. The supplied 2026-09-12 runtime log then established why the intended compatibility path never ran: Keeper's Lantern is initialized before Save Now in the observed BepInEx load order. `Awake()` therefore evaluated `Chainloader.PluginInfos.ContainsKey(SaveNowGuid)` before Save Now had been registered, leaving `_saveNowPresent=false` for the session. The expected `Save Now detected...` and `Save Now compatibility: reapplied...` messages are absent even though Save Now 2.5.14 loads later in the same startup.
+
+The test therefore does **not** establish whether the one-shot vanilla preset reapply itself fixes the visual state; it establishes that 1.0.10 failed to reach that code path.
+
+### Conclusion / next action
+
+**REJECTED.** Do not merge 1.0.10. Preserve `candidate/1.0.10` as the immutable handed source. The next runtime candidate must use a new version and detect Save Now only after plugin startup/load ordering can no longer hide it.
+
+---
+
 ## 1.0.9 — Accepted corrective release
 
 - **Date:** 2026-09-11
