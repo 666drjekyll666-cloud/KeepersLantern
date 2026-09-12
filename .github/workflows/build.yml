@@ -2,6 +2,13 @@ name: Build Keeper's Lantern
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'KeepersLantern.csproj'
+      - 'nuget.config'
+      - '.github/workflows/build.yml'
   push:
     branches: [ main ]
     paths:
