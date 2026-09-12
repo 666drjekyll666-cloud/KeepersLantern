@@ -25,8 +25,9 @@ namespace KeepersLantern
     {
         private const string PluginGuid = "nikich.gyk.keeperslantern";
         private const string PluginName = "Keeper's Lantern";
-        private const string PluginVersion = "1.0.9";
+        private const string PluginVersion = "1.0.10";
         private const string DarkerNightsGuid = "com.thalethegreat.darkernights";
+        private const string SaveNowGuid = "p1xel8ted.gyk.savenow";
 
         private EnvironmentProbe21 _probe;
         private KeeperLight21 _keeperLight;
@@ -56,6 +57,8 @@ namespace KeepersLantern
         private ConfigEntry<bool> _verbose;
 
         private bool _darkerNightsPresent;
+        private bool _saveNowPresent;
+        private bool _saveNowEnvironmentRefreshPending;
         private float _lanternFactor;
         private bool _keeperLightHardOff;
         private bool _keeperExternalCompensation;
@@ -92,13 +95,17 @@ namespace KeepersLantern
 
             try { _darkerNightsPresent = Chainloader.PluginInfos.ContainsKey(DarkerNightsGuid); }
             catch { _darkerNightsPresent = false; }
+            try { _saveNowPresent = Chainloader.PluginInfos.ContainsKey(SaveNowGuid); }
+            catch { _saveNowPresent = false; }
 
-            Logger.LogInfo("Keeper's Lantern 1.0.9 loaded. Release lighting profile active; pre-game ambient mutation blocked; mortuary uses vanilla lighting passthrough.");
+            Logger.LogInfo("Keeper's Lantern 1.0.10 loaded. Release lighting profile active; pre-game ambient mutation blocked; mortuary uses vanilla lighting passthrough.");
             Logger.LogInfo("Outdoor/dungeon darkness uses one final ambientLight adjustment after vanilla TimeOfDay; normal interiors are untouched.");
             Logger.LogInfo("Keeper light uses vanilla DynamicLights cached coefficients; dungeon darkness remains immediate.");
 
             if (_darkerNightsPresent)
                 Logger.LogWarning("Darker Nights detected. This combination is not supported for the intended experience; KeepersLantern automatically suppresses its own outdoor-night ambient pass to avoid double-darkening.");
+            if (_saveNowPresent)
+                Logger.LogInfo("Save Now detected. Direct-load interior compatibility refresh is armed for each new gameplay load.");
         }
 
         private void BindConfig()
@@ -308,6 +315,7 @@ namespace KeepersLantern
             }
 
             EnsureWorldCamera();
+            TryRefreshSaveNowEnvironment(state, region, gameplayReady);
             if (_worldPass != null)
             {
                 _worldPass.Configure(ambientScale, tint, region == LightingRegion21.Dungeon);
@@ -431,6 +439,8 @@ namespace KeepersLantern
                 " updateAvgMs=" + avgUpdate.ToString("0.000") +
                 " updateMaxMs=" + _perfUpdateMaxMs.ToString("0.000") +
                 " gameplayReady=" + _gameplayReady +
+                " saveNowCompat=" + _saveNowPresent +
+                " saveNowRefreshPending=" + _saveNowEnvironmentRefreshPending +
                 " gc0=" + (GC.CollectionCount(0) - _perfGc0Base) +
                 " gc1=" + (GC.CollectionCount(1) - _perfGc1Base) +
                 " gc2=" + (GC.CollectionCount(2) - _perfGc2Base) +
@@ -519,10 +529,43 @@ namespace KeepersLantern
                 if (player == null) return false;
                 _gameplayPlayer = player.transform;
                 _gameplayReadyAfter = Time.unscaledTime + 0.50f;
+                _saveNowEnvironmentRefreshPending = _saveNowPresent;
                 Logger.LogInfo("Gameplay Player(Clone) detected; delaying ambient-pass activation by 0.50s for save/environment settle.");
             }
 
             return _gameplayPlayer != null && Time.unscaledTime >= _gameplayReadyAfter;
+        }
+
+        private void TryRefreshSaveNowEnvironment(LightingSnapshot21 state, LightingRegion21 region, bool gameplayReady)
+        {
+            if (!_saveNowEnvironmentRefreshPending || !gameplayReady) return;
+            if (region == LightingRegion21.Unresolved) return;
+
+            // Save Now restores the stored coordinates with Player.PlaceAtPos after the
+            // game's load events. That can leave an already-selected interior preset with
+            // stale LUT/filter state until a normal exit/re-entry makes vanilla apply the
+            // preset again. Do exactly that one missing vanilla operation, once per newly
+            // spawned gameplay Player, and only when the settled load really starts indoors.
+            if (region != LightingRegion21.Interior || !state.IndoorKnown || !state.IsIndoor ||
+                string.IsNullOrEmpty(state.PresetName))
+            {
+                _saveNowEnvironmentRefreshPending = false;
+                return;
+            }
+
+            _saveNowEnvironmentRefreshPending = false;
+            if (_worldPass != null) _worldPass.PrepareForVanillaEnvironmentRefresh();
+
+            string refreshedPreset;
+            if (_probe.TryReapplyCurrentPreset(out refreshedPreset))
+            {
+                Logger.LogInfo("Save Now compatibility: reapplied current vanilla environment preset after direct interior load | preset=" +
+                    (string.IsNullOrEmpty(refreshedPreset) ? state.PresetName : refreshedPreset) + ".");
+            }
+            else
+            {
+                Logger.LogWarning("Save Now compatibility: current interior preset was detected but vanilla ApplyEnvironmentPreset could not be invoked; leaving game state untouched.");
+            }
         }
 
         private void EnsureWorldCamera()
@@ -587,6 +630,8 @@ namespace KeepersLantern
         private MethodInfo _getTimeK;
         private MemberInfo _mainGameMe;
         private MemberInfo _currentPreset;
+        private MemberInfo _environmentMe;
+        private MethodInfo _applyEnvironmentPreset;
         private UnityEngine.Object _timeObject;
         private float _nextResolve;
 
@@ -630,7 +675,47 @@ namespace KeepersLantern
             if (_mainGameType != null)
                 _mainGameMe = FindMember(_mainGameType, "me", true);
             if (_environmentType != null)
+            {
                 _currentPreset = FindMember(_environmentType, "cur_preset", true);
+                _environmentMe = FindMember(_environmentType, "me", true);
+                _applyEnvironmentPreset = _environmentType
+                    .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    .FirstOrDefault(m => string.Equals(m.Name, "ApplyEnvironmentPreset", StringComparison.Ordinal) &&
+                        m.GetParameters().Length == 1);
+            }
+        }
+
+        public bool TryReapplyCurrentPreset(out string name)
+        {
+            name = null;
+            if (_environmentType == null || _currentPreset == null || _environmentMe == null || _applyEnvironmentPreset == null)
+                return false;
+
+            try
+            {
+                object engine = ReadMember(null, _environmentMe);
+                object preset = ReadMember(null, _currentPreset);
+                if (UnityNull(engine) || UnityNull(preset)) return false;
+
+                ParameterInfo[] parameters = _applyEnvironmentPreset.GetParameters();
+                if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableFrom(preset.GetType()))
+                    return false;
+
+                UnityEngine.Object uo = preset as UnityEngine.Object;
+                if (uo != null) name = uo.name;
+                else
+                {
+                    object rawName = ReadNamed(preset, "name");
+                    if (rawName != null) name = rawName.ToString();
+                }
+
+                _applyEnvironmentPreset.Invoke(engine, new[] { preset });
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private bool ReadTime(out float value)
@@ -800,6 +885,11 @@ namespace KeepersLantern
             }
         }
 
+        public void PrepareForVanillaEnvironmentRefresh()
+        {
+            RestoreAmbient();
+            _frozenSourceReady = false;
+        }
 
         public void ApplyAmbientLate()
         {
@@ -870,7 +960,6 @@ namespace KeepersLantern
             Color cool = new Color(dim.r * 0.74f, dim.g * 0.87f, Mathf.Min(1f, dim.b * 1.07f + 0.012f), dim.a);
             return Color.Lerp(dim, cool, _coolTint);
         }
-
 
         private void RestoreAmbient()
         {
