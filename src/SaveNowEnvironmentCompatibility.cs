@@ -26,7 +26,7 @@ namespace KeepersLantern
         private int _refreshAfterFrame = -1;
 
         private object _harmonyInstance;
-        private MethodBase _globalEventsCheck;
+        private MethodBase _restoreLocationMethod;
         private MethodInfo _postfixMethod;
 
         private Type _environmentType;
@@ -43,8 +43,8 @@ namespace KeepersLantern
         private void Start()
         {
             // BepInEx completes all plugin Awake calls before Unity reaches Start. The
-            // observed 1.0.11 failure came from checking Save Now inside our earlier Awake;
-            // resolving here sees the completed Chainloader registry without steady-state polling.
+            // 1.0.10/1.0.11 startup-order failure came from querying Save Now in our
+            // earlier Awake; resolving here sees the completed Chainloader registry.
             try { _saveNowPresent = Chainloader.PluginInfos.ContainsKey(SaveNowGuid); }
             catch { _saveNowPresent = false; }
 
@@ -53,11 +53,11 @@ namespace KeepersLantern
             if (TryInstallPostRestoreHook())
             {
                 _hookInstalled = true;
-                Logger.LogInfo("Save Now compatibility hook installed on GameSave.GlobalEventsCheck; postfix is ordered after " + SaveNowGuid + ".");
+                Logger.LogInfo("Save Now compatibility hook installed on SaveNow.Plugin.RestoreLocation.");
             }
             else
             {
-                Logger.LogWarning("Save Now detected, but the post-restore compatibility hook could not be installed. No environment state will be changed.");
+                Logger.LogWarning("Save Now detected, but its RestoreLocation compatibility hook could not be installed. No environment state will be changed.");
             }
         }
 
@@ -65,9 +65,10 @@ namespace KeepersLantern
         {
             if (!_hookInstalled || !_refreshPending || Time.frameCount < _refreshAfterFrame) return;
 
-            // The Harmony postfix only schedules work. Waiting until the next Unity frame
-            // guarantees Save Now's RestoreLocation/Player.PlaceAtPos call and the entire
-            // GameSave.GlobalEventsCheck call stack have returned before touching lighting.
+            // Save Now's verified RestoreLocation method ends by calling
+            // MainGame.me.player.PlaceAtPos(savedPosition). The Harmony postfix below only
+            // schedules work; waiting until the next Unity frame guarantees PlaceAtPos and
+            // the full RestoreLocation call stack have returned before touching lighting.
             _refreshPending = false;
 
             if (!UnifiedLightingPlugin.SharedLightingSnapshotValid)
@@ -97,21 +98,24 @@ namespace KeepersLantern
         {
             try
             {
-                Type gameSaveType = FindRuntimeType("GameSave", "GameSave");
-                Type harmonyType = FindRuntimeType("HarmonyLib.Harmony", "Harmony");
-                Type harmonyMethodType = FindRuntimeType("HarmonyLib.HarmonyMethod", "HarmonyMethod");
-                if (gameSaveType == null || harmonyType == null || harmonyMethodType == null) return false;
+                var saveNowInfo = Chainloader.PluginInfos[SaveNowGuid];
+                if (saveNowInfo == null || saveNowInfo.Instance == null) return false;
 
-                _globalEventsCheck = gameSaveType.GetMethod(
-                    "GlobalEventsCheck",
-                    BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                Type saveNowType = saveNowInfo.Instance.GetType();
+                _restoreLocationMethod = saveNowType.GetMethod(
+                    "RestoreLocation",
+                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
                     null,
                     Type.EmptyTypes,
                     null);
-                if (_globalEventsCheck == null) return false;
+                if (_restoreLocationMethod == null) return false;
+
+                Type harmonyType = FindRuntimeType("HarmonyLib.Harmony", "Harmony");
+                Type harmonyMethodType = FindRuntimeType("HarmonyLib.HarmonyMethod", "HarmonyMethod");
+                if (harmonyType == null || harmonyMethodType == null) return false;
 
                 _postfixMethod = typeof(SaveNowEnvironmentCompatibilityPlugin).GetMethod(
-                    "GameSaveGlobalEventsCheckPostfix",
+                    "SaveNowRestoreLocationPostfix",
                     BindingFlags.Static | BindingFlags.NonPublic);
                 if (_postfixMethod == null) return false;
 
@@ -132,10 +136,6 @@ namespace KeepersLantern
                     methodField.SetValue(harmonyPostfix, _postfixMethod);
                 }
 
-                FieldInfo afterField = harmonyMethodType.GetField("after", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (afterField == null) return false;
-                afterField.SetValue(harmonyPostfix, new[] { SaveNowGuid });
-
                 MethodInfo patchMethod = harmonyType
                     .GetMethods(BindingFlags.Instance | BindingFlags.Public)
                     .Where(m => string.Equals(m.Name, "Patch", StringComparison.Ordinal))
@@ -152,7 +152,7 @@ namespace KeepersLantern
 
                 ParameterInfo[] parameters = patchMethod.GetParameters();
                 object[] args = new object[parameters.Length];
-                args[0] = _globalEventsCheck;
+                args[0] = _restoreLocationMethod;
                 args[2] = harmonyPostfix;
                 patchMethod.Invoke(_harmonyInstance, args);
                 return true;
@@ -164,7 +164,7 @@ namespace KeepersLantern
             }
         }
 
-        private static void GameSaveGlobalEventsCheckPostfix()
+        private static void SaveNowRestoreLocationPostfix()
         {
             SaveNowEnvironmentCompatibilityPlugin instance = _instance;
             if (instance == null || !instance._hookInstalled || !instance._saveNowPresent) return;
@@ -286,7 +286,7 @@ namespace KeepersLantern
         {
             if (_instance == this) _instance = null;
 
-            if (_harmonyInstance == null || _globalEventsCheck == null || _postfixMethod == null) return;
+            if (_harmonyInstance == null || _restoreLocationMethod == null || _postfixMethod == null) return;
             try
             {
                 MethodInfo unpatch = _harmonyInstance.GetType().GetMethod(
@@ -296,7 +296,7 @@ namespace KeepersLantern
                     new[] { typeof(MethodBase), typeof(MethodInfo) },
                     null);
                 if (unpatch != null)
-                    unpatch.Invoke(_harmonyInstance, new object[] { _globalEventsCheck, _postfixMethod });
+                    unpatch.Invoke(_harmonyInstance, new object[] { _restoreLocationMethod, _postfixMethod });
             }
             catch { }
         }
