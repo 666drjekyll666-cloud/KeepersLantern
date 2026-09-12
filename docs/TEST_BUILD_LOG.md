@@ -2,6 +2,81 @@
 
 Durable handoff and acceptance record for numbered player builds.
 
+## 1.0.10 — Save Now direct-interior compatibility candidate
+
+- **Date:** 2026-09-12
+- **Development branch:** `dev/1.0.10`
+- **Frozen candidate source:** `candidate/1.0.10`
+- **Exact candidate source commit:** `ba5d1ef54354dc0b191b1b5ee93491e14d91547f`
+- **Draft PR:** `#1` — `1.0.10: refresh vanilla environment after Save Now direct interior load`
+- **Purpose / hypothesis:** Save Now restores saved coordinates with `Player.PlaceAtPos` after the normal load events but does not refresh the environment preset. A direct interior load can therefore retain a stale temporary vanilla LUT/filter state until a normal exit/re-entry makes Graveyard Keeper reapply the current preset.
+
+### Exact runtime change
+
+- detect Save Now by BepInEx GUID `p1xel8ted.gyk.savenow`;
+- arm one compatibility refresh for each newly spawned gameplay `Player(Clone)`;
+- preserve the existing `0.50 s` save/environment settle gate;
+- if the settled first location is a normal interior with a real current preset, reapply that **same current vanilla preset** once through `EnvironmentEngine.ApplyEnvironmentPreset`;
+- clear the compatibility request without action for outdoor or dungeon starts;
+- fail closed if the vanilla engine/current preset/method cannot be resolved;
+- do **not** hardcode ambient/LUT values;
+- do **not** call `SetEngineGlobalState` or `UpdateZone`;
+- release any stale KeepersLantern ambient override before asking vanilla to reapply its preset;
+- all four bundled component versions aligned to `1.0.10`.
+
+### Must remain unchanged from 1.0.9
+
+- outdoor night `0.70 / cool 0.16`;
+- dungeon `0.60 / cool 0.07`, practical-light radius `x1.25`;
+- Point target `120 / 1.50 / K1.25 / offset 0,-0.40`;
+- Ground target `455 / 1.65 / K0.75`;
+- normalized/deferred native Keeper intensity baseline architecture;
+- normal-interior enhanced-light hard-off;
+- vanilla mortuary passthrough;
+- rear-belt visual behavior;
+- live `DynamicLights.shadows` architecture;
+- outdoor strong-light overlap compensation;
+- no custom GL/full-screen edge-darkening renderer;
+- no normal per-frame direct `Light.intensity` fighting.
+
+### Build provenance
+
+The first PR build (`34686020066`) correctly failed during compilation because a version-sync edit had accidentally changed the already-accepted belt glow parent call from `_lanternObject.transform` to `_lanternObject`. That accidental change was restored before any DLL was handed out. A full PR diff review then confirmed that the belt, dungeon, and shadow source differ from 1.0.9 only in version/diagnostic text.
+
+Successful candidate build:
+
+- **Workflow:** `Build Keeper's Lantern`
+- **Actions run:** `34686144572`
+- **Job:** `103533354602`
+- **Conclusion:** success, `0` warnings / `0` errors
+- **Candidate branch head:** `ba5d1ef54354dc0b191b1b5ee93491e14d91547f`
+- **PR merge checkout built by Actions:** `14efe7118b7bbfbe2bf02b3f955c1b63cad4e8fc`
+- **Artifact:** `KeepersLantern-1.0.10`
+- **Artifact ID:** `10296070959`
+- **Artifact ZIP digest:** `sha256:26261a0fb592a78ff91c08b9475b3a9a401a185a2964980bcb8cc76e913d68a9`
+- **Raw DLL size:** `66,560` bytes
+- **Raw DLL SHA-256:** `1463362c53d8bcfca6f7bc4ab7a65f031a2282615a5723012e26a2ad31027b2b`
+
+The raw DLL hash was independently rechecked after downloading and extracting the Actions artifact and matched the build log exactly.
+
+### Requested in-game test
+
+1. With Save Now enabled, direct-load a save made inside `mortuary`. The initial appearance should already match the appearance after leaving and re-entering; there should no longer be a first-load-only LUT/filter mismatch.
+2. Repeat with the church or another normal interior that Save Now can restore into.
+3. Return to the main menu and load an interior save again, proving that the one-shot compatibility refresh rearms for a new gameplay `Player(Clone)`.
+4. Sanity-check an outdoor daytime load followed by night so the accepted 1.0.9 normalized Keeper-light baseline still behaves normally.
+5. Sanity-check dungeon entry/exit; the Save Now compatibility path must not refresh dungeon presets or alter accepted dungeon lighting.
+
+Useful log evidence on a successful direct interior load:
+
+`Save Now compatibility: reapplied current vanilla environment preset after direct interior load | preset=<current preset>.`
+
+### Status
+
+**CANDIDATE HANDED FOR PLAYER TEST.** Do not merge PR #1, move runtime changes to `main`, create `baseline/1.0.10-accepted`, or publish `v1.0.10` until explicit player acceptance.
+
+---
+
 ## 1.0.9 — Accepted corrective release
 
 - **Date:** 2026-09-11
