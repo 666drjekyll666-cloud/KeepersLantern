@@ -2,6 +2,62 @@
 
 Durable handoff and acceptance record for numbered player builds.
 
+## 1.0.12 — ACCEPTED Save Now direct-interior compatibility fix
+
+- **Date:** 2026-09-12
+- **Development branch:** `dev/1.0.12`
+- **Frozen handed source:** `candidate/1.0.12`
+- **Exact handed source commit:** `8df0a848aa8e8bfb5748f6937731db3b01d4430a`
+- **Accepted merge commit:** `c33daee1267c841dd5a5765de8b10d692d332fa9`
+- **Frozen accepted ref:** `baseline/1.0.12-accepted`
+- **PR:** `#3` — `1.0.12: refresh environment after Save Now RestoreLocation`
+- **Purpose / hypothesis:** the rejected 1.0.11 log proved that reapplying `mortuary` before final gameplay startup was still too early because Save Now restores the saved player position later through `SaveNow.Plugin.RestoreLocation()`. 1.0.12 moves the same-preset refresh to the exact verified Save Now restore seam.
+
+### Exact runtime change
+
+- starts from the accepted 1.0.9 lighting behavior rather than carrying forward the rejected 1.0.10/1.0.11 early-settle implementation;
+- adds a dedicated Save Now compatibility component to the existing Keeper's Lantern assembly;
+- remains idle when Save Now is absent;
+- resolves and hooks the verified static `SaveNow.Plugin.RestoreLocation()` method after plugin startup;
+- the postfix itself only schedules work for the next Unity frame, after Save Now's `PlaceAtPos` and `RestoreLocation` call stack have returned;
+- if the resulting state is a normal interior with a real current preset, reapplies that same vanilla preset through `EnvironmentEngine.ApplyEnvironmentPreset`;
+- ignores outdoor and procedural-dungeon results;
+- fails closed if required runtime types/members cannot be resolved;
+- adds no hardcoded ambient/LUT values, `SetEngineGlobalState`, `UpdateZone`, steady-state scans, or plugin-registry polling;
+- preserves accepted 1.0.9 lighting balance, normalized Keeper baseline, belt behavior, dungeon practical lights, and live shadows;
+- all bundled component versions are aligned to `1.0.12`.
+
+### Build provenance
+
+- **Workflow:** `Build Keeper's Lantern`
+- **Actions run:** `34689021870`
+- **Job:** `103540918239`
+- **Conclusion:** success, `0` warnings / `0` errors
+- **Artifact:** `KeepersLantern-1.0.12`
+- **Artifact ID:** `10296636948`
+- **Artifact ZIP digest:** `sha256:b4da5478f2f3e07e932cba2c3871f684635ffde45e77b9537beeb1996986ff7d`
+- **Raw DLL SHA-256:** `5b4fe6b302025c719827bfa2d4f863e63037c48369736470906bc9a6a1e5048a`
+
+### Requested in-game test
+
+Direct-load the same Save Now save inside the church basement / alchemy laboratory that reproduced the mismatch. The initial image should match the known-correct appearance after a normal exit/re-entry. Expected log sequence:
+
+1. `Save Now compatibility hook installed on SaveNow.Plugin.RestoreLocation.`
+2. `Save Now compatibility: Save Now location restore completed; environment refresh scheduled for the next frame.`
+3. `Save Now compatibility: reapplied current vanilla environment preset after Save Now location restore | preset=mortuary.`
+
+### Tester result — ACCEPTED
+
+The supplied 2026-09-12 runtime log contains all three expected compatibility messages in the intended order. It also shows the normal later church -> mortuary transition still calling vanilla `ApplyCurrentEnvironmentPreset, id = mortuary` with the Keeper's Lantern interior passthrough intact.
+
+The tester explicitly confirmed that the image is now correct immediately after direct-loading the previously failing basement save: **“Ага, теперь всё хорошо. Можно в мейн”**.
+
+### Conclusion / promotion
+
+**ACCEPTED.** PR #3 was promoted to `main` after explicit player acceptance. `baseline/1.0.12-accepted` freezes the accepted merge state. 1.0.12 supersedes the rejected 1.0.10 and 1.0.11 Save Now compatibility candidates while preserving the accepted 1.0.9 lighting contract.
+
+---
+
 ## 1.0.11 — REJECTED Save Now late-detection compatibility candidate
 
 - **Date:** 2026-09-12
@@ -90,7 +146,7 @@ The hypothesis "reapply the current preset after the early 0.50 s Player(Clone) 
 - **Result:** success, `0` warnings / `0` errors
 - **Artifact:** `KeepersLantern-1.0.10`
 - **Artifact ID:** `10296070959`
-- **Artifact digest:** `sha256:26261a0fb592a78ff91c08b9475b3a9a401a185a2964980bcb8cc76e913d68a9`
+- **Artifact digest:** `sha256:26261a0fb592a78ff91c08b9475b3a9a401a185a2964980bcb8cc76e913d68a9a`
 - **Raw handed DLL SHA-256:** `1463362c53d8bcfca6f7bc4ab7a65f031a2282615a5723012e26a2ad31027b2b`
 
 ### Tester result — REJECTED
