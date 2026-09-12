@@ -432,7 +432,7 @@ namespace KeepersLantern
             }
 
             GameObject glowObject = new GameObject("KeepersLantern Back Belt Glow");
-            glowObject.transform.SetParent(_lanternObject, false);
+            glowObject.transform.SetParent(_lanternObject.transform, false);
             _lanternGlowRenderer = glowObject.AddComponent<SpriteRenderer>();
             _lanternGlowRenderer.sprite = _litSprite;
             _lanternGlowRenderer.enabled = false;
