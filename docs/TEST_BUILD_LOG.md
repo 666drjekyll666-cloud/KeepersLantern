@@ -2,6 +2,61 @@
 
 Durable handoff and acceptance record for numbered player builds.
 
+## 1.0.11 — Save Now late-detection compatibility candidate
+
+- **Date:** 2026-09-12
+- **Development branch:** `dev/1.0.11`
+- **Frozen handed source:** `candidate/1.0.11`
+- **Exact handed source commit:** `263aaed2a7c3f71d0b41d6b90f29946bed906f81`
+- **Draft PR:** `#2` — `1.0.11: detect Save Now after plugin startup`
+- **Purpose / hypothesis:** 1.0.10 never exercised its delayed vanilla environment-preset refresh because Keeper's Lantern initialized before Save Now and cached a false GUID lookup in `Awake()`. Re-detect Save Now once when the gameplay `Player(Clone)` appears, after BepInEx plugin startup has completed, then exercise the same narrow one-shot interior refresh.
+
+### Exact runtime change
+
+- preserve the 1.0.10 one-shot direct-interior compatibility path;
+- keep the early Save Now GUID lookup as a harmless fast path;
+- when a new gameplay `Player(Clone)` is detected, re-read `Chainloader.PluginInfos.ContainsKey("p1xel8ted.gyk.savenow")` exactly once before arming the refresh;
+- if the late lookup newly finds Save Now, log `Save Now detected after plugin startup...`;
+- after the existing `0.50 s` save/environment settle gate, if the settled first location is a normal interior with a real current preset, reapply that same current vanilla preset once through `EnvironmentEngine.ApplyEnvironmentPreset`;
+- clear the request without action for outdoor or procedural-dungeon starts;
+- no repeated plugin-registry lookup in steady state;
+- no hardcoded ambient/LUT values;
+- no `SetEngineGlobalState` or `UpdateZone`;
+- preserve all accepted 1.0.9 lighting balance and normalized Keeper-light baseline behavior;
+- all four bundled component versions aligned to `1.0.11`; belt/dungeon/shadow runtime logic is unchanged.
+
+### Build provenance
+
+- **Workflow:** `Build Keeper's Lantern`
+- **Actions run:** `34687039884`
+- **Job:** `103535720523`
+- **Conclusion:** success, `0` warnings / `0` errors
+- **Candidate branch head:** `263aaed2a7c3f71d0b41d6b90f29946bed906f81`
+- **PR merge checkout built by Actions:** `29cc5ec5688ee0a83476a46e4567fe8ab55d2314`
+- **Artifact:** `KeepersLantern-1.0.11`
+- **Artifact ID:** `10295847975`
+- **Artifact ZIP digest:** `sha256:369a0d9d81087e1fa273d67b8f57a7bbf4c1ebf9cb40d8154620a9f057736c1b`
+- **Raw DLL size:** `67,072` bytes
+- **Raw DLL SHA-256:** `a446a6883a2e7b4152cf70e49c794b296509aa58b762f569ec0f0fbaa1e98137`
+
+The raw DLL hash was independently rechecked after downloading and extracting the Actions artifact and matched the CI build log exactly.
+
+### Requested in-game test
+
+1. Direct-load the same Save Now save inside the church basement / alchemy laboratory that reproduced the mismatch.
+2. Compare the initial appearance with the known-correct appearance after a normal exit/re-entry.
+3. The log must contain both:
+   - `Save Now detected after plugin startup. Direct-load interior compatibility refresh is armed for this gameplay load.`
+   - `Save Now compatibility: reapplied current vanilla environment preset after direct interior load | preset=<current preset>.`
+4. If both lines are present but the visual state is still wrong, treat the delayed preset-reapply hypothesis as disproven and research the additional vanilla transition/zone state instead of adding fixed lighting values.
+5. If the visual state is corrected, repeat after returning to the main menu and optionally sanity-check outdoor night and dungeon entry/exit for regressions.
+
+### Status
+
+**CANDIDATE HANDED FOR PLAYER TEST.** Do not merge PR #2, move runtime changes to `main`, create `baseline/1.0.11-accepted`, or publish `v1.0.11` until explicit player acceptance.
+
+---
+
 ## 1.0.10 — REJECTED Save Now compatibility candidate
 
 - **Date:** 2026-09-12
