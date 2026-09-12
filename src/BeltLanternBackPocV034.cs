@@ -12,7 +12,7 @@ namespace KeepersLantern
     {
         private const string PluginGuid = "nikich.gyk.keeperslantern.beltlanternpoc";
         private const string PluginName = "Keeper's Lantern - Belt Visual";
-        private const string PluginVersion = "1.0.9";
+        private const string PluginVersion = "1.0.12";
 
         private static readonly Vector2[] BackAnchors =
         {
@@ -84,7 +84,7 @@ namespace KeepersLantern
                     new AcceptableValueRange<float>(-20f, 20f),
                     new ConfigurationManagerAttributes { IsAdvanced = true, DispName = "Lantern Position Y" }));
 
-            Logger.LogInfo("Keeper belt lantern visual 1.0.9 loaded.");
+            Logger.LogInfo("Keeper belt lantern visual 1.0.12 loaded.");
             Logger.LogInfo("Visual policy: lantern is mounted on the rear belt and is visible only when the Keeper faces away from the camera.");
             Logger.LogInfo("The physical lantern remains present when its gameplay light is off: dark-glass sprite by day/indoors, lit-glass sprite outdoors at night/in dungeon.");
             Logger.LogInfo("Accepted synchronized belt sway to actual body animation-frame changes; there is no free-running sine animation.");
@@ -160,7 +160,7 @@ namespace KeepersLantern
             ResetWalkCycle();
             if (_bound)
             {
-                Logger.LogInfo("Keeper belt lantern 1.0.9 bound to " + UnifiedLightingPlugin.PathOf(_charHero) + ".");
+                Logger.LogInfo("Keeper belt lantern 1.0.12 bound to " + UnifiedLightingPlugin.PathOf(_charHero) + ".");
                 DumpState();
             }
         }
@@ -528,7 +528,7 @@ namespace KeepersLantern
             string sprite = _directionRenderer != null && _directionRenderer.sprite != null ? _directionRenderer.sprite.name : "<none>";
             Vector2 p = BackAnchors[_anchorPreset];
             Logger.LogInfo(
-                "F10 BACK BELT LANTERN DUMP | v=1.0.9" +
+                "F10 BACK BELT LANTERN DUMP | v=1.0.12" +
                 " facing=" + _lastFacing +
                 " sourceSprite=" + sprite +
                 " anchorPreset=" + (_anchorPreset + 1) + "/" + BackAnchors.Length +
