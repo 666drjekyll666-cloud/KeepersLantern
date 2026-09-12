@@ -2,7 +2,7 @@
 
 Durable handoff and acceptance record for numbered player builds.
 
-## 1.0.11 — Save Now late-detection compatibility candidate
+## 1.0.11 — REJECTED Save Now late-detection compatibility candidate
 
 - **Date:** 2026-09-12
 - **Development branch:** `dev/1.0.11`
@@ -51,9 +51,17 @@ The raw DLL hash was independently rechecked after downloading and extracting th
 4. If both lines are present but the visual state is still wrong, treat the delayed preset-reapply hypothesis as disproven and research the additional vanilla transition/zone state instead of adding fixed lighting values.
 5. If the visual state is corrected, repeat after returning to the main menu and optionally sanity-check outdoor night and dungeon entry/exit for regressions.
 
-### Status
+### Tester result — REJECTED
 
-**CANDIDATE HANDED FOR PLAYER TEST.** Do not merge PR #2, move runtime changes to `main`, create `baseline/1.0.11-accepted`, or publish `v1.0.11` until explicit player acceptance.
+The visual mismatch remained after direct-loading the church basement/alchemy-lab save. The supplied runtime log proves that 1.0.11 did execute the intended compatibility path: it logged late Save Now detection and successfully called `EnvironmentEngine.ApplyEnvironmentPreset` for `mortuary`. The image still remained wrong until a normal exit/re-entry.
+
+The same log also establishes the ordering error in the attempted fix. Keeper's Lantern reapplied `mortuary` before the game's final `StartPlayingGame 3/4` phase and before the later player teleport. Save Now 2.5.14 public source independently shows that its `GameSave.GlobalEventsCheck` postfix calls `RestoreLocation()`, which performs `MainGame.me.player.PlaceAtPos(pos)`. Therefore the 1.0.11 refresh was not actually post-Save-Now-location-restore even though it was post-plugin-startup.
+
+The hypothesis "reapply the current preset after the early 0.50 s Player(Clone) settle gate" is disproven. The narrower remaining hypothesis is that the same vanilla preset reapply may work only after Save Now's late location restore / `GameSave.GlobalEventsCheck` completion.
+
+### Conclusion / next action
+
+**REJECTED.** Do not merge 1.0.11. Preserve `candidate/1.0.11` as the immutable handed source. The next numbered runtime candidate must wait until after Save Now's late `PlaceAtPos` stage instead of using elapsed time from `Player(Clone)` creation.
 
 ---
 
