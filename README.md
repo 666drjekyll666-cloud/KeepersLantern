@@ -2,12 +2,11 @@
 
 A lightweight lighting overhaul for **Graveyard Keeper 1.407** built around darker nights, darker procedural dungeons, and a visible belt lantern that reuses the game's native lighting systems.
 
-**Current accepted main version: 1.0.12**  
-**Latest published GitHub Release: 1.0.9**
+**Current stable version: 1.0.12**
 
 ## Download
 
-Published stable binaries are available from [GitHub Releases](https://github.com/666drjekyll666-cloud/KeepersLantern/releases).
+Stable binaries are available from [GitHub Releases](https://github.com/666drjekyll666-cloud/KeepersLantern/releases).
 
 ## What it changes
 
