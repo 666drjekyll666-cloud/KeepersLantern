@@ -15,7 +15,7 @@ namespace KeepersLantern
     {
         private const string PluginGuid = "nikich.gyk.keeperslantern.shadowboost";
         private const string PluginName = "Keeper's Lantern - Dynamic Shadows";
-        private const string PluginVersion = "1.0.9";
+        private const string PluginVersion = "1.0.10";
 
         private const float ShadowAlphaMultiplier = 3.4f;
         private const float KeeperLightMatchRadius = 1.0f;
@@ -65,7 +65,7 @@ namespace KeepersLantern
         private void Awake()
         {
             ResolveTypes();
-            Logger.LogInfo("Dynamic shadows 1.0.9 loaded. Live DynamicLights.shadows registry only; obsolete snapshot-cache code removed.");
+            Logger.LogInfo("Dynamic shadows 1.0.10 loaded. Live DynamicLights.shadows registry only; obsolete snapshot-cache code removed.");
         }
 
         private void LateUpdate()
@@ -394,7 +394,7 @@ namespace KeepersLantern
             Vector2 pos;
             bool hasPos = TryGetKeeperLightPos(out pos);
             float sharedFade = Mathf.Clamp01(UnifiedLightingPlugin.SharedLanternFactor);
-            Logger.LogInfo("F10 SHADOW BOOST | v=1.0.9 active=" + (sharedFade > NightActiveThreshold) +
+            Logger.LogInfo("F10 SHADOW BOOST | v=1.0.10 active=" + (sharedFade > NightActiveThreshold) +
                 " fade=" + sharedFade.ToString("0.00") +
                 " source=DynamicLights.shadows-live" +
                 " liveEntries=" + _liveEntries.Count +
