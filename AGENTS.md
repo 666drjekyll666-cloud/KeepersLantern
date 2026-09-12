@@ -98,12 +98,15 @@ Known history: 1.0.10 and 1.0.11 attempted the Save Now interior refresh before 
 
 - `main` = accepted stable public state.
 - Runtime changes start on `dev/X.Y.Z` or an explicitly named research branch.
-- Do not promote runtime changes without explicit player acceptance such as `фиксируем`, `релизим`, or `сливай`.
+- Do not promote runtime changes without explicit player acceptance such as `фиксируем`, `релизим`, `сливай`, or `можно в main`.
+- For a tested numbered Keeper's Lantern build, an unqualified approval to promote it to `main` means the version is accepted as the new stable release. Complete the whole promotion without asking for a second release confirmation: merge the accepted runtime to `main`, preserve the accepted `baseline/X.Y.Z-accepted` ref, and publish the exact tested DLL as GitHub Release `vX.Y.Z`.
+- Treat merge and release publication as separate technical operations but one acceptance outcome. Only leave an accepted `main` version unpublished when the user explicitly says merge-only, asks to defer publication, or publication is externally blocked; in the blocked case, record publication as unfinished work rather than as an intentional stable state.
 - Every handed numbered DLL is immutable and tied to exact committed source.
-- Important accepted checkpoints receive a frozen `baseline/...` branch/ref.
-- `docs/TEST_BUILD_LOG.md` is the durable handoff/acceptance record.
+- `candidate/X.Y.Z` is the immutable handed/test source state; acceptance does not retroactively turn rejected candidates into stable baselines.
+- Important accepted checkpoints receive a frozen `baseline/X.Y.Z-accepted` branch/ref.
+- `docs/TEST_BUILD_LOG.md` is the durable handoff/acceptance/release record.
 
-Documentation-only changes do not require a runtime rebuild and should not trigger hosted CI.
+Documentation-only changes do not require a runtime rebuild and should not trigger hosted CI. Updating the accepted-release manifest to publish an already tested, hash-verified binary is an intentional distribution action and may trigger the dedicated publication workflow.
 
 ## Build / handoff
 
