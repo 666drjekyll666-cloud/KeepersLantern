@@ -214,4 +214,4 @@ The GitHub Release therefore contains the exact player-tested binary bytes, not 
 
 ## Historical note — 1.0.7
 
-1.0.7 correctly prevented direct interior-preset capture but was later shown to capture daytime-attenuated live intensity as if it were a full baseline. It is **superseded / not a complete fix**.
+1.0.7 correctly prevented direct interior-preset capture but was later shown to capture daytime-attenuated live intensity as if it were the outdoor vanilla baseline. It is **superseded / not a complete fix**.
