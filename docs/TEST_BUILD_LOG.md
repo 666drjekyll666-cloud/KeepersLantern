@@ -2,12 +2,12 @@
 
 Durable handoff and acceptance record for numbered player builds.
 
-## 1.0.10 — Save Now direct-interior compatibility candidate
+## 1.0.10 — REJECTED Save Now compatibility candidate
 
 - **Date:** 2026-09-12
 - **Development branch:** `dev/1.0.10`
-- **Frozen candidate source:** `candidate/1.0.10`
-- **Exact candidate source commit:** `ba5d1ef54354dc0b191b1b5ee93491e14d91547f`
+- **Frozen handed source:** `candidate/1.0.10`
+- **Exact handed source commit:** `ba5d1ef54354dc0b191b1b5ee93491e14d91547f`
 - **Draft PR:** `#1` — `1.0.10: refresh vanilla environment after Save Now direct interior load`
 - **Purpose / hypothesis:** Save Now restores saved coordinates with `Player.PlaceAtPos` after the normal load events but does not refresh the environment preset. A direct interior load can therefore retain a stale temporary vanilla LUT/filter state until a normal exit/re-entry makes Graveyard Keeper reapply the current preset.
 
@@ -71,9 +71,15 @@ Useful log evidence on a successful direct interior load:
 
 `Save Now compatibility: reapplied current vanilla environment preset after direct interior load | preset=<current preset>.`
 
+### Tester result — REJECTED
+
+Direct-load lighting remained incorrect. The supplied 2026-09-12 runtime log established that the intended compatibility path never ran: Keeper's Lantern initializes before Save Now in the observed BepInEx load order, so the `Awake()` GUID lookup happens before Save Now is registered. The log contains neither the expected `Save Now detected...` line nor the one-shot compatibility refresh line, even though Save Now 2.5.14 loads later during the same startup.
+
+This result therefore does **not** establish whether the delayed vanilla preset reapply itself is effective. It establishes that 1.0.10 never armed the refresh.
+
 ### Status
 
-**CANDIDATE HANDED FOR PLAYER TEST.** Do not merge PR #1, move runtime changes to `main`, create `baseline/1.0.10-accepted`, or publish `v1.0.10` until explicit player acceptance.
+**REJECTED.** Preserve `candidate/1.0.10` as the immutable handed source. Do not merge PR #1 or publish 1.0.10. The next candidate must use a new version and re-check Save Now after plugin startup before arming the refresh.
 
 ---
 
