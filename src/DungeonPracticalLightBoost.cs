@@ -13,7 +13,7 @@ namespace KeepersLantern
     {
         private const string PluginGuid = "nikich.gyk.keeperslantern.dungeonpracticalboost";
         private const string PluginName = "Keeper's Lantern - Dungeon Practical Lights";
-        private const string PluginVersion = "1.0.9";
+        private const string PluginVersion = "1.0.10";
         private const float RangeMultiplier = 1.25f;
 
         private readonly Dictionary<Light, float> _originalRanges = new Dictionary<Light, float>();
@@ -27,7 +27,7 @@ namespace KeepersLantern
 
         private void Awake()
         {
-            Logger.LogInfo("Dungeon practical-light boost 1.0.9 loaded. Dungeon stationary light radius x" + RangeMultiplier.ToString("0.00") + ".");
+            Logger.LogInfo("Dungeon practical-light boost 1.0.10 loaded. Dungeon stationary light radius x" + RangeMultiplier.ToString("0.00") + ".");
         }
 
         private void LateUpdate()
